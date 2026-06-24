@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
@@ -9,7 +9,7 @@ const newPassword = ref('')
 const confirm = ref('')
 const saved = ref(false)
 const localError = ref(null)
-const guardMode = ref('…')
+const guardMode = ref('вЂ¦')
 
 // Response guard mode is read-only here (configured via ARBUZ_GUARD_MODE).
 onMounted(async () => {
