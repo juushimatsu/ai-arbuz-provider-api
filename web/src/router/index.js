@@ -4,14 +4,15 @@ import { useAuthStore } from '../stores/auth'
 const routes = [
   { path: '/login', name: 'login', component: () => import('../views/Login.vue') },
   { path: '/', redirect: '/dashboard' },
-  { path: '/dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { nav: 'Статистика' } },
-  { path: '/providers', name: 'providers', component: () => import('../views/Providers.vue'), meta: { nav: 'Провайдеры' } },
-  { path: '/upstreams', name: 'upstreams', component: () => import('../views/UpstreamKeys.vue'), meta: { nav: 'Внешние ключи' } },
-  { path: '/issued', name: 'issued', component: () => import('../views/IssuedKeys.vue'), meta: { nav: 'Сгенерированные ключи' } },
-  { path: '/logs', name: 'logs', component: () => import('../views/Logs.vue'), meta: { nav: 'Лента запросов' } },
-  { path: '/checker', name: 'checker', component: () => import('../views/Checker.vue'), meta: { nav: 'API-чекер' } },
+  { path: '/dashboard', name: 'dashboard', component: () => import('../views/Dashboard.vue'), meta: { nav: 'РЎС‚Р°С‚РёСЃС‚РёРєР°' } },
+  { path: '/providers', name: 'providers', component: () => import('../views/Providers.vue'), meta: { nav: 'РџСЂРѕРІР°Р№РґРµСЂС‹' } },
+  { path: '/upstreams', name: 'upstreams', component: () => import('../views/UpstreamKeys.vue'), meta: { nav: 'Р’РЅРµС€РЅРёРµ РєР»СЋС‡Рё' } },
+  { path: '/issued', name: 'issued', component: () => import('../views/IssuedKeys.vue'), meta: { nav: 'РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Рµ РєР»СЋС‡Рё' } },
+  { path: '/logs', name: 'logs', component: () => import('../views/Logs.vue'), meta: { nav: 'Р›РµРЅС‚Р° Р·Р°РїСЂРѕСЃРѕРІ' } },
+  { path: '/checker', name: 'checker', component: () => import('../views/Checker.vue'), meta: { nav: 'API-С‡РµРєРµСЂ' } },
   { path: '/mcp', name: 'mcp', component: () => import('../views/Mcp.vue'), meta: { nav: 'MCP' } },
-  { path: '/settings', name: 'settings', component: () => import('../views/Settings.vue'), meta: { nav: 'Настройки' } }
+  { path: '/integration', name: 'integration', component: () => import('../views/Integration.vue'), meta: { nav: 'Интеграция' } },
+  { path: '/settings', name: 'settings', component: () => import('../views/Settings.vue'), meta: { nav: 'РќР°СЃС‚СЂРѕР№РєРё' } }
 ]
 
 const router = createRouter({
