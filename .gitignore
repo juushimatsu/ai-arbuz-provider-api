@@ -1,0 +1,42 @@
+# ---- Build artefacts ----
+/bin/
+/dist/
+/web/dist/
+*.exe
+*.exe~
+*.test
+*.out
+coverage.*
+
+# ---- Local data (DB + secrets) ----
+/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ---- Env / secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---- Node ----
+/web/node_modules/
+node_modules/
+
+# ---- Internal working docs (not for public repo) ----
+HANDOFF.md
+CLAUDE.md
+AGENTS.md
+ai_arbuz_provider_api_tz.md
+
+# ---- Reference material / scratch (external projects, experiments) ----
+/temp-files/
+/tmp/
+/scratch/

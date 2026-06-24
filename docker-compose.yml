@@ -1,0 +1,23 @@
+# Single-service compose: the router is self-contained (SQLite file + SPA).
+# Put a reverse proxy (Caddy / Nginx / Traefik) in front for TLS — see DEPLOYMENT.md.
+services:
+  arbuz:
+    build: .
+    image: ai-arbuz-provider-api:latest
+    container_name: arbuz
+    restart: unless-stopped
+    # Bind only to localhost; your reverse proxy fronts it for TLS.
+    # Change the host port (left side) if 8088 is already taken on the host.
+    ports:
+      - "127.0.0.1:8088:8080"
+    environment:
+      # REQUIRED — generate with: openssl rand -hex 32
+      ARBUZ_MASTER_KEY: ${ARBUZ_MASTER_KEY:?ARBUZ_MASTER_KEY must be set}
+      ARBUZ_PUBLIC_URL: ${ARBUZ_PUBLIC_URL:-https://arbuz.example.com}
+      ARBUZ_ADMIN_LOGIN: ${ARBUZ_ADMIN_LOGIN:-admin}
+      ARBUZ_ADMIN_PASSWORD: ${ARBUZ_ADMIN_PASSWORD:?ARBUZ_ADMIN_PASSWORD must be set}
+      ARBUZ_LOG_LEVEL: ${ARBUZ_LOG_LEVEL:-info}
+      ARBUZ_CACHE_ENABLED: ${ARBUZ_CACHE_ENABLED:-enabled}
+      ARBUZ_CACHE_TTL_SECONDS: ${ARBUZ_CACHE_TTL_SECONDS:-300}
+    volumes:
+      - ./data:/app/data

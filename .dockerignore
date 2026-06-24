@@ -1,0 +1,13 @@
+# Exclude build artefacts and local state from the Docker context.
+.git/
+data/
+*.db
+*.db-*
+node_modules/
+web/node_modules/
+web/dist/
+bin/
+*.exe
+.env
+.env.*
+!.env.example

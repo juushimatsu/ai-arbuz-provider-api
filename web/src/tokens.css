@@ -1,0 +1,80 @@
+/* Design tokens — terminal/cyberpunk theme (§5). Single source of truth.
+   All components reference these vars; no raw colors/sizes elsewhere. */
+:root {
+  /* Palette */
+  --bg:        #050807;
+  --bg-panel:  #0a0f0d;
+  --bg-elev:   #0d1411;
+  --bg-row:    #0b110e;
+  --bg-hover:  #111a16;
+
+  --fg:        #c8ffe0;
+  --fg-dim:    #5f8f76;
+  --fg-mute:   #3a5a48;
+
+  --line:      #1a2620;
+  --line-soft: #121b16;
+
+  --accent:    #00ff9c;   /* primary green */
+  --accent-2:  #00b86b;
+  --danger:    #ff4d6d;   /* red status */
+  --warn:      #ffcc4d;
+  --info:      #4dd2ff;
+
+  /* Typography — monospace everywhere */
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, ui-monospace, monospace;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-base: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* Radii (small — terminal aesthetic) */
+  --r-sm: 2px;
+  --r-md: 4px;
+
+  /* Layout columns (§5 three-column) */
+  --col-sidebar: 220px;
+  --col-inspector: 360px;
+
+  /* Misc */
+  --glow: 0 0 8px rgba(0, 255, 156, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-shadow: var(--glow); }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--bg-panel); }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: var(--r-sm); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-2); }
+
+/* Caps technical labels (§5) */
+.label {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
