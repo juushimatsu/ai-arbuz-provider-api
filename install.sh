@@ -132,6 +132,13 @@ else
   fi
 fi
 
+# ---- 4b. data dir (must be writable by the in-container uid 10001) ---------
+# The image runs as a non-root user (uid 10001). On a bind-mounted ./data the
+# host ownership wins, so without this the app gets SQLite CANTOPEN ("out of
+# memory (14)") and crash-loops. Create and chown the dir up front.
+RUN "mkdir -p '$INSTALL_DIR/data'"
+RUN "chown -R 10001:10001 '$INSTALL_DIR/data' || chmod -R 777 '$INSTALL_DIR/data'"
+
 # ---- 5. pull (or build) & start -------------------------------------------
 # By default we PULL a prebuilt image from GHCR — no compilation on this host,
 # so it's fast and won't hog CPU/RAM. Set ARBUZ_BUILD=1 to build from source.
