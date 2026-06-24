@@ -15,7 +15,7 @@ const curlChat = computed(() => `curl ${base.value}/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "gpt-4o",
-    "messages": [{"role": "user", "content": "РџСЂРёРІРµС‚!"}]
+    "messages": [{"role": "user", "content": "Привет!"}]
   }'`)
 
 const curlModels = computed(() => `curl ${base.value}/models \\
@@ -25,12 +25,12 @@ const pyCode = computed(() => `from openai import OpenAI
 
 client = OpenAI(
     base_url="${base.value}",
-    api_key="Р’РђРЁ_РЎР“Р•РќР•Р РР РћР’РђРќРќР«Р™_РљР›Р®Р§",  # РєР»СЋС‡ РёР· СЂР°Р·РґРµР»Р° В«РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Рµ РєР»СЋС‡РёВ»
+    api_key="ВАШ_СГЕНЕРИРОВАННЫЙ_КЛЮЧ",  # ключ из раздела «Сгенерированные ключи»
 )
 
 resp = client.chat.completions.create(
     model="gpt-4o",
-    messages=[{"role": "user", "content": "РџСЂРёРІРµС‚!"}],
+    messages=[{"role": "user", "content": "Привет!"}],
 )
 print(resp.choices[0].message.content)`)
 
@@ -43,7 +43,7 @@ const client = new OpenAI({
 
 const resp = await client.chat.completions.create({
   model: "gpt-4o",
-  messages: [{ role: "user", content: "РџСЂРёРІРµС‚!" }],
+  messages: [{ role: "user", content: "Привет!" }],
 });
 console.log(resp.choices[0].message.content);`)
 
@@ -53,7 +53,7 @@ const curlAnthropic = computed(() => `curl ${base.value}/messages \\
   -d '{
     "model": "claude-sonnet-4-5",
     "max_tokens": 256,
-    "messages": [{"role": "user", "content": "РџСЂРёРІРµС‚!"}]
+    "messages": [{"role": "user", "content": "Привет!"}]
   }'`)
 </script>
 
@@ -62,12 +62,12 @@ const curlAnthropic = computed(() => `curl ${base.value}/messages \\
     <h2>INTEGRATION</h2>
 
     <div class="card">
-      <div class="label">Р§РўРћ РќРЈР–РќРћ</div>
+      <div class="label">ЧТО НУЖНО</div>
       <p class="muted">
-        1. РЎРѕР·РґР°Р№ РїСЂРѕРІР°Р№РґРµСЂР° Рё РїСЂРёРІСЏР¶Рё Рє РЅРµРјСѓ РІРЅРµС€РЅРёР№ РєР»СЋС‡ (СЂР°Р·РґРµР»С‹ В«РџСЂРѕРІР°Р№РґРµСЂС‹В» Рё В«Р’РЅРµС€РЅРёРµ РєР»СЋС‡РёВ»).<br />
-        2. РЎРіРµРЅРµСЂРёСЂСѓР№ РєР»РёРµРЅС‚СЃРєРёР№ РєР»СЋС‡ РІ СЂР°Р·РґРµР»Рµ В«РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Рµ РєР»СЋС‡РёВ» вЂ” РѕРЅ РЅР°С‡РёРЅР°РµС‚СЃСЏ СЃ
-        <code>sk-arbuzвЂ¦</code> Рё РїРѕРєР°Р·С‹РІР°РµС‚СЃСЏ РѕРґРёРЅ СЂР°Р·.<br />
-        3. РСЃРїРѕР»СЊР·СѓР№ РµРіРѕ РєР°Рє РѕР±С‹С‡РЅС‹Р№ OpenAI/Anthropic API-РєР»СЋС‡, СѓРєР°Р·Р°РІ <b>BASE_URL</b> РЅРёР¶Рµ.
+        1. Создай провайдера и привяжи к нему внешний ключ (разделы «Провайдеры» и «Внешние ключи»).<br />
+        2. Сгенерируй клиентский ключ в разделе «Сгенерированные ключи» — он начинается с
+        <code>sk-arbuz…</code> и показывается один раз.<br />
+        3. Используй его как обычный OpenAI/Anthropic API-ключ, указав <b>BASE_URL</b> ниже.
       </p>
       <div class="kv">
         <span class="k">BASE_URL</span>
@@ -75,19 +75,19 @@ const curlAnthropic = computed(() => `curl ${base.value}/messages \\
           <button class="mini" @click="copy(base, 'b')">{{ copied==='b' ? 'ok' : 'copy' }}</button>
         </span>
         <span class="k">AUTH</span>
-        <span class="v"><code>Authorization: Bearer &lt;РІР°С€ РєР»СЋС‡&gt;</code></span>
+        <span class="v"><code>Authorization: Bearer &lt;ваш ключ&gt;</code></span>
         <span class="k">FORMATS</span>
-        <span class="v">OpenAI (<code>/chat/completions</code>, <code>/models</code>, <code>/embeddings</code>) В· Anthropic (<code>/messages</code>)</span>
+        <span class="v">OpenAI (<code>/chat/completions</code>, <code>/models</code>, <code>/embeddings</code>) · Anthropic (<code>/messages</code>)</span>
       </div>
     </div>
 
     <div class="card">
-      <div class="label">cURL вЂ” chat completions <button class="mini" @click="copy(curlChat, 'c')">{{ copied==='c' ? 'ok' : 'copy' }}</button></div>
+      <div class="label">cURL — chat completions <button class="mini" @click="copy(curlChat, 'c')">{{ copied==='c' ? 'ok' : 'copy' }}</button></div>
       <pre>{{ curlChat }}</pre>
     </div>
 
     <div class="card">
-      <div class="label">cURL вЂ” СЃРїРёСЃРѕРє РјРѕРґРµР»РµР№ <button class="mini" @click="copy(curlModels, 'm')">{{ copied==='m' ? 'ok' : 'copy' }}</button></div>
+      <div class="label">cURL — список моделей <button class="mini" @click="copy(curlModels, 'm')">{{ copied==='m' ? 'ok' : 'copy' }}</button></div>
       <pre>{{ curlModels }}</pre>
     </div>
 
@@ -102,7 +102,7 @@ const curlAnthropic = computed(() => `curl ${base.value}/messages \\
     </div>
 
     <div class="card">
-      <div class="label">cURL вЂ” Anthropic-С„РѕСЂРјР°С‚ <button class="mini" @click="copy(curlAnthropic, 'a')">{{ copied==='a' ? 'ok' : 'copy' }}</button></div>
+      <div class="label">cURL — Anthropic-формат <button class="mini" @click="copy(curlAnthropic, 'a')">{{ copied==='a' ? 'ok' : 'copy' }}</button></div>
       <pre>{{ curlAnthropic }}</pre>
     </div>
   </div>
