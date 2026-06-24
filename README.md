@@ -63,25 +63,62 @@ domain  →  ports  →  usecase  →  adapter  →  transport (HTTP)
 
 ---
 
-## Быстрый старт (Docker)
+## Быстрый старт (одна команда)
+
+На чистом сервере **Ubuntu/Debian** выполните:
 
 ```bash
-# 1. Скопируйте шаблон окружения и заполните секреты
-cp .env.example .env
-#   Обязательно задайте надёжные ARBUZ_ADMIN_PASSWORD и ARBUZ_MASTER_KEY
-
-# 2. Запустите
-docker compose up -d
-
-# 3. Откройте веб-панель на сконфигурированном порту (см. .env / compose)
+curl -fsSL https://raw.githubusercontent.com/juushimatsu/ai-arbuz-provider-api/master/install.sh | bash -s -- ваш-домен.com
 ```
 
-Приложение по умолчанию слушает локальный порт и предназначено для работы
-**за обратным прокси** (TLS, домен). Порт настраивается — он не обязан
-конфликтовать с уже работающими на сервере сервисами.
+или эквивалентно:
 
-> Подробная инструкция по развёртыванию за реверс-прокси (включая случай, когда
-> 80/443 уже заняты другим прокси) — в [DEPLOYMENT.md](DEPLOYMENT.md).
+```bash
+ARBUZ_DOMAIN=ваш-домен.com bash <(curl -fsSL https://raw.githubusercontent.com/juushimatsu/ai-arbuz-provider-api/master/install.sh)
+```
+
+Скрипт [`install.sh`](install.sh) **идемпотентен** (безопасно перезапускать) и сам:
+
+1. ставит зависимости и Docker (с `sudo`, если их нет);
+2. клонирует/обновляет репозиторий в `~/ai-arbuz-provider-api`;
+3. на первом запуске генерирует секреты в `.env` (`ARBUZ_MASTER_KEY`, пароль
+   администратора) и больше их не перезатирает;
+4. выбирает свободный порт (по умолчанию `8088`) и биндит его только на
+   `127.0.0.1` — без конфликтов с уже работающими сервисами;
+5. собирает и запускает стек через `docker compose`;
+6. проверяет `/api/health` и в конце печатает логин/пароль администратора и
+   **готовый блок для вашего обратного прокси** (Caddy):
+
+```caddyfile
+ваш-домен.com {
+    reverse_proxy 127.0.0.1:<порт>
+}
+```
+
+Останется вставить этот блок в ваш Caddyfile и перезагрузить Caddy — установщик
+**ничего в вашем прокси не меняет**.
+
+> Домен можно не указывать (тогда сервис поднимется на `127.0.0.1:<порт>`, а блок
+> прокси нужно будет настроить вручную). Подробности и примеры для Nginx/Traefik —
+> в [DEPLOYMENT.md](DEPLOYMENT.md).
+
+---
+
+## Запуск вручную (Docker Compose)
+
+Если предпочитаете без установщика:
+
+```bash
+git clone -b master https://github.com/juushimatsu/ai-arbuz-provider-api.git
+cd ai-arbuz-provider-api
+cp .env.example .env
+#   Задайте надёжные ARBUZ_ADMIN_PASSWORD и ARBUZ_MASTER_KEY (приложение
+#   отказывается стартовать с пустым/слабым паролем)
+docker compose up -d
+```
+
+Приложение слушает локальный порт и предназначено для работы **за обратным
+прокси** (TLS, домен). Порт настраивается через `ARBUZ_HOST_PORT` в `.env`.
 
 ---
 
@@ -93,7 +130,8 @@ docker compose up -d
 |---|---|
 | `ARBUZ_ADMIN_PASSWORD` | Пароль администратора панели (**обязателен**, без дефолта) |
 | `ARBUZ_MASTER_KEY` | Мастер-ключ шифрования секретов at-rest (**обязателен**) |
-| `ARBUZ_LISTEN` | Адрес/порт прослушивания (внутренний)
+| `ARBUZ_LISTEN` | Адрес/порт прослушивания (внутренний) |
+| `ARBUZ_HOST_PORT` | Публикуемый на хосте порт (Docker Compose) |
 | `ARBUZ_PUBLIC_URL` | Публичный URL роутера (ваш домен) |
 | `ARBUZ_GUARD_MODE` | Режим response-guard: `block` / `alert` / `off` |
 | `ARBUZ_LIMIT_FAIL` | Поведение лимитера при ошибке учёта: `closed` / `open` |
