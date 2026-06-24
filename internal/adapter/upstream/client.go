@@ -145,7 +145,18 @@ func joinURL(base, path string) string {
 	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
 		return path
 	}
-	return strings.TrimRight(base, "/") + "/" + strings.TrimLeft(path, "/")
+	base = strings.TrimRight(base, "/")
+	path = "/" + strings.TrimLeft(path, "/")
+	// Avoid duplicating an API version prefix when the configured base_url
+	// already includes it, e.g. base ".../v1" + path "/v1/chat/completions"
+	// must not become ".../v1/v1/chat/completions" (upstream 404).
+	for _, seg := range []string{"/v1beta", "/v1"} {
+		if strings.HasSuffix(base, seg) && (path == seg || strings.HasPrefix(path, seg+"/")) {
+			path = strings.TrimPrefix(path, seg)
+			break
+		}
+	}
+	return base + path
 }
 
 // applyAuth sets the right auth header per format.
