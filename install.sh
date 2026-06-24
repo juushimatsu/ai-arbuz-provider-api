@@ -132,9 +132,21 @@ else
   fi
 fi
 
-# ---- 5. build & start -----------------------------------------------------
-log "Building and starting the stack (this may take a few minutes)..."
-RUN "cd '$INSTALL_DIR' && docker compose up -d --build"
+# ---- 5. pull (or build) & start -------------------------------------------
+# By default we PULL a prebuilt image from GHCR — no compilation on this host,
+# so it's fast and won't hog CPU/RAM. Set ARBUZ_BUILD=1 to build from source.
+if [ "${ARBUZ_BUILD:-0}" = "1" ]; then
+  log "ARBUZ_BUILD=1 -> building image from source (this may take several minutes)..."
+  RUN "cd '$INSTALL_DIR' && docker compose up -d --build"
+else
+  log "Pulling prebuilt image from GHCR (fast, no host compilation)..."
+  if RUN "cd '$INSTALL_DIR' && docker compose pull"; then
+    RUN "cd '$INSTALL_DIR' && docker compose up -d --no-build"
+  else
+    warn "Pull failed (image not published yet?). Falling back to local build..."
+    RUN "cd '$INSTALL_DIR' && docker compose up -d --build"
+  fi
+fi
 
 # ---- 6. health check ------------------------------------------------------
 log "Waiting for the service to become healthy on 127.0.0.1:${PORT}..."

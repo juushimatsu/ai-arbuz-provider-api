@@ -2,8 +2,13 @@
 # Put a reverse proxy (Caddy / Nginx / Traefik) in front for TLS — see DEPLOYMENT.md.
 services:
   arbuz:
+    # Default: pull the prebuilt image from GHCR (fast, no compilation on the host).
+    # The image is built & published by .github/workflows/docker-publish.yml.
+    # Override the tag via ARBUZ_IMAGE if needed.
+    image: ${ARBUZ_IMAGE:-ghcr.io/juushimatsu/ai-arbuz-provider-api:latest}
+    # 'build' is kept only as a fallback for local source builds
+    # (use: docker compose build  /  ARBUZ_BUILD=1 ./install.sh).
     build: .
-    image: ai-arbuz-provider-api:latest
     container_name: arbuz
     restart: unless-stopped
     # Bind only to localhost; your reverse proxy fronts it for TLS.
