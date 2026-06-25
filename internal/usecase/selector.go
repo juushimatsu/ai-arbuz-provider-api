@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"errors"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/arbuz/ai-arbuz-provider-api/internal/domain"
@@ -25,6 +27,8 @@ type FailoverSelector struct {
 	failThreshold    int
 	fallbackStrategy fallbackStrategy
 	now              func() time.Time
+	// rr holds per-provider round-robin counters (domain.ID -> *uint64).
+	rr sync.Map
 }
 
 type fallbackStrategy int
@@ -58,6 +62,18 @@ func (s *FailoverSelector) Select(_ context.Context, provider *domain.Provider, 
 			}
 		}
 		out = append(out, k)
+	}
+	// round_robin: rotate the eligible keys so each request starts on a
+	// different key (load distribution). The proxy still walks the rest in
+	// order, so a non-responding key transparently falls through to the next.
+	if provider.Strategy == domain.StrategyRoundRobin && len(out) > 1 {
+		ctrAny, _ := s.rr.LoadOrStore(provider.ID, new(uint64))
+		ctr := ctrAny.(*uint64)
+		off := int((atomic.AddUint64(ctr, 1) - 1) % uint64(len(out)))
+		rotated := make([]domain.UpstreamKey, 0, len(out))
+		rotated = append(rotated, out[off:]...)
+		rotated = append(rotated, out[:off]...)
+		out = rotated
 	}
 	return out, nil
 }

@@ -22,7 +22,8 @@ const (
 type RoutingStrategy string
 
 const (
-	StrategyFailover RoutingStrategy = "failover" // ordered by Priority, switch on error
+	StrategyFailover   RoutingStrategy = "failover"    // ordered by Priority, switch on error
+	StrategyRoundRobin RoutingStrategy = "round_robin" // распределяет запросы по ключам, switch on error
 )
 
 // LimitWindow is one of the rolling windows required by §4.3.

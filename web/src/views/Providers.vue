@@ -78,7 +78,7 @@ onMounted(load)
         <h3>{{ editing.id ? 'EDIT PROVIDER' : 'NEW PROVIDER' }}</h3>
         <div class="field"><label>NAME</label><input v-model="editing.name" /></div>
         <div class="field"><label>STRATEGY</label>
-          <select v-model="editing.strategy"><option value="failover">failover</option></select>
+          <select v-model="editing.strategy"><option value="failover">failover</option><option value="round_robin">round_robin</option></select>
         </div>
         <div class="field"><label>GLOBAL_MODELS (one per line)</label><textarea v-model="editing._modelsText" rows="4"></textarea></div>
         <div class="field"><label>FALLBACK_MODELS (one per line)</label><textarea v-model="editing._fallbackText" rows="3"></textarea></div>

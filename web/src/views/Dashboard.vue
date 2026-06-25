@@ -38,9 +38,9 @@ async function load() {
   }
 }
 
-const linePoints = computed(() => series.value.map(p => ({ v: p.Count })))
-const errPoints = computed(() => series.value.map(p => ({ v: p.Errors })))
-const ttfbPoints = computed(() => series.value.map(p => ({ v: p.TTFBMs })))
+const linePoints = computed(() => series.value.map(p => ({ v: p.count })))
+const errPoints = computed(() => series.value.map(p => ({ v: p.errors })))
+const ttfbPoints = computed(() => series.value.map(p => ({ v: p.ttfb_ms })))
 
 onMounted(load)
 </script>

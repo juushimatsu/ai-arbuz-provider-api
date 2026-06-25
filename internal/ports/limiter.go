@@ -46,25 +46,25 @@ type StatsQuery struct {
 }
 
 type StatsSummary struct {
-	TotalRequests int64
-	SuccessCount  int64
-	ErrorCount    int64
-	ErrorRate     float64
-	PromptTokens  int64
-	CompletionTokens int64
-	AvgTTFBMs     float64
+	TotalRequests    int64   `json:"total_requests"`
+	SuccessCount     int64   `json:"success_count"`
+	ErrorCount       int64   `json:"error_count"`
+	ErrorRate        float64 `json:"error_rate"`
+	PromptTokens     int64   `json:"prompt_tokens"`
+	CompletionTokens int64   `json:"completion_tokens"`
+	AvgTTFBMs        float64 `json:"avg_ttfb_ms"`
 }
 
 type StatsPoint struct {
-	TS     domain.Time
-	Count  int64
-	Errors int64
-	Tokens int64
-	TTFBMs float64
+	TS     domain.Time `json:"ts"`
+	Count  int64       `json:"count"`
+	Errors int64       `json:"errors"`
+	Tokens int64       `json:"tokens"`
+	TTFBMs float64     `json:"ttfb_ms"`
 }
 
 type StatsBucket struct {
-	Label string
-	Count int64
-	Tokens int64
+	Label  string `json:"label"`
+	Count  int64  `json:"count"`
+	Tokens int64  `json:"tokens"`
 }

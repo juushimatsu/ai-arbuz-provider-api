@@ -1,25 +1,25 @@
 /* Design tokens — terminal/cyberpunk theme (§5). Single source of truth.
    All components reference these vars; no raw colors/sizes elsewhere. */
 :root {
-  /* Palette */
-  --bg:        #050807;
-  --bg-panel:  #0a0f0d;
-  --bg-elev:   #0d1411;
-  --bg-row:    #0b110e;
-  --bg-hover:  #111a16;
+  /* Palette - dark, warm-neutral surfaces (DESIGN.md) */
+  --bg:        #161417;
+  --bg-panel:  #1d1a1e;
+  --bg-elev:   #242025;
+  --bg-row:    #1b181c;
+  --bg-hover:  #2a262b;
 
-  --fg:        #c8ffe0;
-  --fg-dim:    #5f8f76;
-  --fg-mute:   #3a5a48;
+  --fg:        #ededed;
+  --fg-dim:    #a8a0a4;
+  --fg-mute:   #6a6a6a;   /* DESIGN muted */
 
-  --line:      #1a2620;
-  --line-soft: #121b16;
+  --line:      #3a343b;
+  --line-soft: #2a262b;
 
-  --accent:    #00ff9c;   /* primary green */
-  --accent-2:  #00b86b;
-  --danger:    #ff4d6d;   /* red status */
-  --warn:      #ffcc4d;
-  --info:      #4dd2ff;
+  --accent:    #ff385c;   /* DESIGN primary "Rausch" */
+  --accent-2:  #e00b41;   /* DESIGN primary-active */
+  --danger:    #ff5a5f;   /* error status (coral) */
+  --warn:      #ffb400;
+  --info:      #428bff;
 
   /* Typography — monospace everywhere */
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, ui-monospace, monospace;
@@ -47,7 +47,7 @@
   --col-inspector: 360px;
 
   /* Misc */
-  --glow: 0 0 8px rgba(0, 255, 156, 0.35);
+  --glow: 0 0 8px rgba(255, 56, 92, 0.35);
 }
 
 * { box-sizing: border-box; }
