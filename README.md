@@ -106,6 +106,26 @@ ARBUZ_DOMAIN=ваш-домен.com bash <(curl -fsSL https://raw.githubuserconte
 
 ---
 
+## Удаление (одна команда)
+
+Остановить и удалить панель на сервере:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/juushimatsu/ai-arbuz-provider-api/master/uninstall.sh | bash
+```
+
+По умолчанию скрипт останавливает контейнеры и удаляет Docker-образ, затем
+**спрашивает `[y/N]`** перед удалением данных (SQLite-база с ключами и логами)
+и секретов (`.env`). Полное удаление без вопросов:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/juushimatsu/ai-arbuz-provider-api/master/uninstall.sh | bash -s -- --purge
+```
+
+Флаг `--keep-data` принудительно сохраняет данные (удаляет только контейнеры и образ).
+
+---
+
 ## Запуск вручную (Docker Compose)
 
 Если предпочитаете без установщика:

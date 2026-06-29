@@ -125,6 +125,8 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("PUT /api/issued/{id}", s.adminAuth(s.updateIssued))
 	s.mux.HandleFunc("DELETE /api/issued/{id}", s.adminAuth(s.deleteIssued))
 	s.mux.HandleFunc("POST /api/issued/{id}/revoke", s.adminAuth(s.revokeIssued))
+	s.mux.HandleFunc("POST /api/issued/{id}/pause", s.adminAuth(s.pauseIssued))
+	s.mux.HandleFunc("POST /api/issued/{id}/resume", s.adminAuth(s.resumeIssued))
 
 	s.mux.HandleFunc("GET /api/logs", s.adminAuth(s.listLogs))
 	s.mux.HandleFunc("GET /api/logs/{id}", s.adminAuth(s.getLog))
@@ -135,6 +137,8 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("POST /api/models/search", s.adminAuth(s.searchModels))
 	s.mux.HandleFunc("POST /api/checker/run", s.adminAuth(s.runChecker))
+	s.mux.HandleFunc("POST /api/upstream/check-all", s.adminAuth(s.checkAllUpstream))
+	s.mux.HandleFunc("POST /api/providers/{id}/search-models", s.adminAuth(s.searchProviderModels))
 	s.mux.HandleFunc("GET /api/checker/runs", s.adminAuth(s.listCheckerRuns))
 	s.mux.HandleFunc("GET /api/checker/runs/{id}", s.adminAuth(s.getCheckerRun))
 
@@ -306,6 +310,8 @@ func mapDomainError(err error) (int, string) {
 		return http.StatusUnauthorized, "Unauthorized"
 	case errors.Is(err, domain.ErrForbidden):
 		return http.StatusForbidden, "Forbidden"
+	case errors.Is(err, domain.ErrKeyPaused):
+		return http.StatusForbidden, "key is paused"
 	case errors.Is(err, domain.ErrKeyRevoked):
 		return http.StatusUnauthorized, "Key revoked"
 	case errors.Is(err, domain.ErrKeyExpired):

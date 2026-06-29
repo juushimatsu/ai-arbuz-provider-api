@@ -374,6 +374,9 @@ func (p *Proxy) resolveKey(ctx context.Context, token string) (*domain.IssuedKey
 		return nil, domain.ErrUnauthorized
 	}
 	if !k.IsActive(time.Now().UTC()) {
+		if k.Status == domain.StatusPaused {
+			return nil, domain.ErrKeyPaused
+		}
 		if k.Status != domain.StatusActive {
 			return nil, domain.ErrKeyRevoked
 		}
@@ -399,6 +402,16 @@ func (p *Proxy) tryUpstream(ctx context.Context, provider *domain.Provider, issu
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Token accounting fix: OpenAI-compatible upstreams only emit a final
+	// usage chunk on streamed responses when the request sets
+	// stream_options.include_usage=true. Clients rarely send it, which made
+	// every streamed request log 0 tokens (and still record success). Inject
+	// it for streamed OpenAI-format requests so usageParsingReader can capture
+	// real token counts.
+	if req.Stream && outFormat == domain.FormatOpenAI {
+		body = ensureStreamUsage(body)
 	}
 
 	upReq := ports.UpstreamRequest{
@@ -749,4 +762,31 @@ func maskTail(s string) string {
 		return "****"
 	}
 	return "…" + s[len(s)-4:]
+}
+
+
+// ensureStreamUsage merges {"include_usage": true} into the request body's
+// stream_options object without disturbing any other fields (uses RawMessage
+// so numbers/strings are preserved byte-for-byte). On any parse error it
+// returns the body unchanged.
+func ensureStreamUsage(body []byte) []byte {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(body, &m); err != nil {
+		return body
+	}
+	so := map[string]json.RawMessage{}
+	if raw, ok := m["stream_options"]; ok {
+		_ = json.Unmarshal(raw, &so)
+	}
+	so["include_usage"] = json.RawMessage("true")
+	nb, err := json.Marshal(so)
+	if err != nil {
+		return body
+	}
+	m["stream_options"] = nb
+	out, err := json.Marshal(m)
+	if err != nil {
+		return body
+	}
+	return out
 }

@@ -277,6 +277,22 @@ func (s *Server) revokeIssued(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "revoked"})
 }
 
+func (s *Server) pauseIssued(w http.ResponseWriter, r *http.Request) {
+	if err := s.issued.Pause(r.Context(), r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "paused"})
+}
+
+func (s *Server) resumeIssued(w http.ResponseWriter, r *http.Request) {
+	if err := s.issued.Resume(r.Context(), r.PathValue("id")); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "active"})
+}
+
 func (s *Server) deleteIssued(w http.ResponseWriter, r *http.Request) {
 	if err := s.issued.Delete(r.Context(), r.PathValue("id")); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())

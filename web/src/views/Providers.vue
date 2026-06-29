@@ -43,6 +43,24 @@ async function remove(id) {
   try { await api.deleteProvider(id); await load() } catch (e) { error.value = e.message }
 }
 
+const searching = ref(false)
+async function autoSearchModels() {
+  const e = editing.value
+  if (!e || !e.id) { error.value = 'save the provider and add upstream keys first, then auto-search'; return }
+  searching.value = true
+  error.value = null
+  try {
+    const res = await api.searchProviderModels(e.id)
+    if (res.models && res.models.length) {
+      const merged = Array.from(new Set([...splitLines(e._modelsText), ...res.models]))
+      e._modelsText = merged.join('\n')
+    } else {
+      error.value = res.error || 'no models reported by this provider\'s keys'
+    }
+  } catch (err) { error.value = err.message }
+  finally { searching.value = false }
+}
+
 function splitLines(t) { return (t || '').split('\n').map(s => s.trim()).filter(Boolean) }
 onMounted(load)
 </script>
@@ -80,7 +98,13 @@ onMounted(load)
         <div class="field"><label>STRATEGY</label>
           <select v-model="editing.strategy"><option value="failover">failover</option><option value="round_robin">round_robin</option></select>
         </div>
-        <div class="field"><label>GLOBAL_MODELS (one per line)</label><textarea v-model="editing._modelsText" rows="4"></textarea></div>
+        <div class="field">
+          <label>GLOBAL_MODELS (one per line)
+            <button type="button" class="btn mini-btn" :disabled="searching || !editing.id" @click="autoSearchModels">{{ searching ? 'searching…' : 'auto-search models' }}</button>
+          </label>
+          <textarea v-model="editing._modelsText" rows="4"></textarea>
+          <small v-if="!editing.id" class="dim">save provider &amp; add keys to enable auto-search</small>
+        </div>
         <div class="field"><label>FALLBACK_MODELS (one per line)</label><textarea v-model="editing._fallbackText" rows="3"></textarea></div>
         <div class="field"><label>STATUS</label>
           <select v-model="editing.status"><option value="active">active</option><option value="disabled">disabled</option></select>

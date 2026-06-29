@@ -16,6 +16,9 @@ type Status string
 const (
 	StatusActive   Status = "active"
 	StatusDisabled Status = "disabled"
+	// StatusPaused — issued key temporarily disabled by the admin; can be
+	// resumed. Distinct from StatusDisabled (revocation, terminal).
+	StatusPaused Status = "paused"
 )
 
 // RoutingStrategy selects how keys are picked inside a Provider.

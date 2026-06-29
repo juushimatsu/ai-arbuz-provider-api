@@ -62,6 +62,8 @@ export const api = {
   updateIssued: (id, k) => request('PUT', '/api/issued/' + id, k),
   deleteIssued: (id) => request('DELETE', '/api/issued/' + id),
   revokeIssued: (id) => request('POST', '/api/issued/' + id + '/revoke'),
+  pauseIssued: (id) => request('POST', '/api/issued/' + id + '/pause'),
+  resumeIssued: (id) => request('POST', '/api/issued/' + id + '/resume'),
 
   // logs
   listLogs: (params) => request('GET', '/api/logs' + qs(params)),
@@ -78,6 +80,9 @@ export const api = {
   runChecker: (base_url, secret, format, probes) =>
     request('POST', '/api/checker/run', { base_url, secret, format, probes }),
   listCheckerRuns: () => request('GET', '/api/checker/runs'),
+  checkAllUpstream: (probes, providerId) =>
+    request('POST', '/api/upstream/check-all', { probes, provider_id: providerId }),
+  searchProviderModels: (id) => request('POST', '/api/providers/' + id + '/search-models'),
   getCheckerRun: (id) => request('GET', '/api/checker/runs/' + id),
 
   // mcp

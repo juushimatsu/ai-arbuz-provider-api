@@ -97,6 +97,37 @@ func (s *IssuedService) Revoke(ctx context.Context, id domain.ID) error {
 	return s.repo.Update(ctx, k)
 }
 
+// Pause temporarily disables an issued key without revoking it. A paused key
+// stops serving requests (proxy returns 403 "key is paused") until resumed.
+func (s *IssuedService) Pause(ctx context.Context, id domain.ID) error {
+	k, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if k.Status == domain.StatusDisabled {
+		return nil // revoked keys cannot be paused
+	}
+	if k.Status == domain.StatusPaused {
+		return nil
+	}
+	k.Status = domain.StatusPaused
+	return s.repo.Update(ctx, k)
+}
+
+// Resume re-activates a paused key. No-op if the key is not paused (revoked
+// keys stay revoked).
+func (s *IssuedService) Resume(ctx context.Context, id domain.ID) error {
+	k, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return err
+	}
+	if k.Status != domain.StatusPaused {
+		return nil
+	}
+	k.Status = domain.StatusActive
+	return s.repo.Update(ctx, k)
+}
+
 func (s *IssuedService) Delete(ctx context.Context, id domain.ID) error {
 	return s.repo.Delete(ctx, id)
 }

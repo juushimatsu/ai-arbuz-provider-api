@@ -43,6 +43,16 @@ async function save() {
   } catch (err) { error.value = err.message }
 }
 
+const copied = ref(false)
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); copied.value = true; setTimeout(() => { copied.value = false }, 1500) } catch (e) { error.value = 'clipboard blocked' }
+}
+async function pause(id) {
+  try { await api.pauseIssued(id); await load() } catch (err) { error.value = err.message }
+}
+async function resume(id) {
+  try { await api.resumeIssued(id); await load() } catch (err) { error.value = err.message }
+}
 async function revoke(id) {
   if (!confirm('Revoke key? It will stop working immediately.')) return
   try { await api.revokeIssued(id); await load() } catch (e) { error.value = e.message }
@@ -87,9 +97,11 @@ onMounted(load)
             <span v-else>unlimited</span>
           </td>
           <td class="dim">{{ fmtDate(k.expires_at) }}</td>
-          <td><StatusDot :status="k.status === 'active' ? 'ok' : 'err'" /> {{ k.status }}</td>
+          <td><StatusDot :status="k.status === 'active' ? 'ok' : (k.status === 'paused' ? 'warn' : 'err')" /> {{ k.status }}</td>
           <td>
-            <button class="btn danger" v-if="k.status==='active'" @click="revoke(k.id)">revoke</button>
+            <button class="btn" v-if="k.status==='active'" @click="pause(k.id)">pause</button>
+            <button class="btn" v-if="k.status==='paused'" @click="resume(k.id)">resume</button>
+            <button class="btn danger" v-if="k.status!=='disabled'" @click="revoke(k.id)">revoke</button>
             <button class="btn danger" @click="remove(k.id)">del</button>
           </td>
         </tr>
@@ -103,6 +115,7 @@ onMounted(load)
         <h3>KEY&nbsp;CREATED</h3>
         <div class="warn-line">⚠ shown once — copy now</div>
         <code class="token-box">{{ justCreated.token }}</code>
+        <div class="actions" style="margin-top: var(--sp-2)"><button class="btn" @click="copyText(justCreated.token)">{{ copied ? 'copied ✓' : 'copy key' }}</button></div>
         <div class="kv" style="margin-top: var(--sp-3)">
           <span class="k">ID</span><span class="v">{{ justCreated.id }}</span>
           <span class="k">EXPIRES</span><span class="v">{{ fmtDate(justCreated.expires_at) }}</span>

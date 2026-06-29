@@ -24,6 +24,8 @@ var (
 	ErrKeyRevoked = errors.New("key revoked")
 	// ErrKeyExpired — issued key past its validity window.
 	ErrKeyExpired = errors.New("key expired")
+	// ErrKeyPaused — issued key was paused by the admin (resumable).
+	ErrKeyPaused = errors.New("key paused")
 	// ErrNoUpstreamKey — provider has no usable upstream key (all disabled/failed).
 	ErrNoUpstreamKey = errors.New("no upstream key available")
 

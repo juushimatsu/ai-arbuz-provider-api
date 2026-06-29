@@ -10,6 +10,16 @@ const error = ref(null)
 const editing = ref(null)
 const searchResults = ref(null)
 const searching = ref(false)
+const checkResults = ref(null)
+const checking = ref(false)
+async function checkAll(probes) {
+  checking.value = true; error.value = null; checkResults.value = null
+  try {
+    const res = await api.checkAllUpstream(probes)
+    checkResults.value = res.keys || []
+  } catch (err) { error.value = err.message }
+  finally { checking.value = false }
+}
 
 async function load() {
   loading.value = true
@@ -78,7 +88,14 @@ onMounted(load)
     <h2>UPSTREAM&nbsp;KEYS</h2>
     <div v-if="error" class="login-err">[ERR] {{ error }}</div>
 
-    <button class="btn" @click="newKey">+ add upstream key</button>
+    <div class="bar">
+      <button class="btn" @click="newKey">+ add upstream key</button>
+      <span class="dim">check all:</span>
+      <button class="btn" :disabled="checking || !list.length" @click="checkAll(['models'])">models</button>
+      <button class="btn" :disabled="checking || !list.length" @click="checkAll(['chat'])">chat</button>
+      <button class="btn" :disabled="checking || !list.length" @click="checkAll(['models','chat'])">both</button>
+      <span v-if="checking" class="dim">checking…</span>
+    </div>
 
     <table class="feed" style="margin-top: var(--sp-4)">
       <thead><tr><th>NAME</th><th>PROVIDER</th><th>BASE_URL</th><th>FMT</th><th>MODELS</th><th>STATUS</th><th></th></tr></thead>
@@ -98,6 +115,18 @@ onMounted(load)
         <tr v-if="!list.length"><td colspan="7" class="empty">no upstream keys</td></tr>
       </tbody>
     </table>
+
+    <div v-if="checkResults" class="check-results">
+      <h3>CHECK&nbsp;RESULTS</h3>
+      <div v-for="kr in checkResults" :key="kr.id" class="cr-row">
+        <span class="cr-name">{{ kr.name }}</span>
+        <span v-for="r in kr.results" :key="r.kind" class="cr-probe">
+          <StatusDot :status="r.status === 'active' ? 'ok' : 'err'" />
+          {{ r.kind }}<template v-if="r.http_code"> · {{ r.http_code }}</template><template v-if="r.latency_ms"> · {{ r.latency_ms }}ms</template><template v-if="r.error"> · {{ r.error }}</template>
+        </span>
+      </div>
+      <div v-if="!checkResults.length" class="dim">no keys</div>
+    </div>
 
     <div v-if="editing" class="modal-bg" @click.self="editing = null">
       <div class="modal">
@@ -152,4 +181,10 @@ onMounted(load)
 .pick.on { color: var(--accent); }
 .pick.on::before { content: '[x] '; }
 .pick:not(.on)::before { content: '[ ] '; }
+.bar { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.check-results { margin-top: var(--sp-4); border: 1px solid var(--line); padding: var(--sp-3); }
+.check-results h3 { margin: 0 0 var(--sp-2); color: var(--accent); }
+.cr-row { display: flex; gap: var(--sp-3); align-items: center; padding: var(--sp-1) 0; flex-wrap: wrap; }
+.cr-name { min-width: 140px; font-family: var(--font-mono); }
+.cr-probe { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--fg-dim); font-size: 0.9em; }
 </style>
