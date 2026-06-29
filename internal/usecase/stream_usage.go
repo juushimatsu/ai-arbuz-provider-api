@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"io"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/arbuz/ai-arbuz-provider-api/internal/domain"
 	"github.com/arbuz/ai-arbuz-provider-api/internal/ports"
@@ -16,8 +18,24 @@ import (
 // the usageParsingReader (same-format pass-through) write into it; OnDone reads
 // it at EOF so streaming output tokens are accounted (blocker #4).
 type usageCapture struct {
-	mu    sync.Mutex
-	usage ports.Usage
+	mu        sync.Mutex
+	usage     ports.Usage
+	respChars int64 // accumulated assistant text length, for fallback estimation
+}
+
+// addChars accumulates the rune-length of assistant text seen on the stream.
+// Used only when the upstream never reports real usage.
+func (u *usageCapture) addChars(n int) {
+	u.mu.Lock()
+	u.respChars += int64(n)
+	u.mu.Unlock()
+}
+
+// chars returns the accumulated assistant text length.
+func (u *usageCapture) chars() int64 {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return u.respChars
 }
 
 func (u *usageCapture) set(v ports.Usage) {
@@ -140,4 +158,166 @@ func extractJSONObject(s string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// respCharCounter wraps the final response stream (after any format conversion
+// and guard wrapping) and counts the rune-length of assistant text emitted in
+// SSE chunks. Handles both OpenAI (choices[].delta.content) and Anthropic
+// (delta.text) shapes, so a single wrapper covers same-format and cross-format
+// paths. It is byte-transparent: it never alters what the client receives.
+//
+// This feeds the fallback token estimate used when the upstream never reports
+// real usage (mirrors the Electron reference, which estimates char/4).
+type respCharCounter struct {
+	r    io.Reader
+	ucap *usageCapture
+	buf  []byte
+}
+
+func newRespCharCounter(r io.Reader, ucap *usageCapture) *respCharCounter {
+	return &respCharCounter{r: r, ucap: ucap}
+}
+
+func (c *respCharCounter) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	if n > 0 {
+		c.scan(p[:n])
+	}
+	return n, err
+}
+
+// Close forwards to the underlying reader if it is a Closer.
+func (c *respCharCounter) Close() error {
+	if cl, ok := c.r.(io.Closer); ok {
+		return cl.Close()
+	}
+	return nil
+}
+
+func (c *respCharCounter) scan(b []byte) {
+	c.buf = append(c.buf, b...)
+	for {
+		i := bytes.IndexByte(c.buf, '\n')
+		if i < 0 {
+			// Guard against unbounded growth if a newline never arrives.
+			if len(c.buf) > 1<<20 {
+				c.buf = c.buf[:0]
+			}
+			return
+		}
+		line := c.buf[:i]
+		c.buf = append([]byte(nil), c.buf[i+1:]...)
+		c.handleLine(line)
+	}
+}
+
+func (c *respCharCounter) handleLine(line []byte) {
+	line = bytes.TrimSpace(line)
+	if !bytes.HasPrefix(line, []byte("data:")) {
+		return
+	}
+	payload := bytes.TrimSpace(line[len("data:"):])
+	if len(payload) == 0 || bytes.Equal(payload, []byte("[DONE]")) {
+		return
+	}
+	var chunk struct {
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+		} `json:"choices"`
+		Delta struct {
+			Text string `json:"text"`
+		} `json:"delta"`
+	}
+	if json.Unmarshal(payload, &chunk) != nil {
+		return
+	}
+	n := 0
+	for _, ch := range chunk.Choices {
+		n += utf8.RuneCountInString(ch.Delta.Content)
+	}
+	n += utf8.RuneCountInString(chunk.Delta.Text)
+	if n > 0 {
+		c.ucap.addChars(n)
+	}
+}
+
+// estTokens mirrors the reference heuristic: ceil(runeLen/4).
+func estTokens(s string) int64 {
+	n := utf8.RuneCountInString(s)
+	return int64((n + 3) / 4)
+}
+
+// requestText extracts human-readable text from a chat/messages request body
+// for fallback prompt-token estimation. Handles OpenAI (messages[].content as
+// string or content-parts), Anthropic (system + messages), and raw prompt.
+func requestText(body []byte) string {
+	var m struct {
+		Messages []struct {
+			Content json.RawMessage `json:"content"`
+		} `json:"messages"`
+		System json.RawMessage `json:"system"`
+		Prompt string `json:"prompt"`
+	}
+	if json.Unmarshal(body, &m) != nil {
+		return string(body)
+	}
+	var b strings.Builder
+	add := func(raw json.RawMessage) {
+		if len(raw) == 0 {
+			return
+		}
+		var s string
+		if json.Unmarshal(raw, &s) == nil {
+			b.WriteString(s)
+			b.WriteByte(' ')
+			return
+		}
+		var parts []struct {
+			Text string `json:"text"`
+		}
+		if json.Unmarshal(raw, &parts) == nil {
+			for _, p := range parts {
+				b.WriteString(p.Text)
+				b.WriteByte(' ')
+			}
+		}
+	}
+	for _, msg := range m.Messages {
+		add(msg.Content)
+	}
+	add(m.System)
+	b.WriteString(m.Prompt)
+	if b.Len() == 0 {
+		return string(body)
+	}
+	return b.String()
+}
+
+// responseText extracts assistant text from a non-streamed response body for
+// fallback completion-token estimation. Handles OpenAI (choices[].message
+// .content) and Anthropic (content[].text).
+func responseText(body []byte) string {
+	var m struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+		Content []struct {
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+	if json.Unmarshal(body, &m) != nil {
+		return ""
+	}
+	var b strings.Builder
+	for _, ch := range m.Choices {
+		b.WriteString(ch.Message.Content)
+	}
+	for _, c := range m.Content {
+		b.WriteString(c.Text)
+	}
+	return b.String()
 }

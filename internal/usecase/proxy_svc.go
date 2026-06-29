@@ -350,6 +350,22 @@ func (p *Proxy) onRequestDone(issued *domain.IssuedKey, provider *domain.Provide
 				res.Usage = u
 			}
 		}
+		// Fallback estimation (mirrors the Electron reference): when no real
+		// usage was reported by the upstream, estimate prompt tokens from the
+		// request text and completion tokens from the streamed (or non-stream)
+		// response text, using ceil(runes/4). Guarantees every request logs
+		// non-zero tokens instead of 0/0.
+		if res.Usage.PromptTokens == 0 && res.Usage.CompletionTokens == 0 {
+			res.Usage.PromptTokens = estTokens(requestText(req.Body))
+			var compChars int64
+			if res.UCap != nil {
+				compChars = res.UCap.chars()
+			}
+			if compChars == 0 && len(res.Body) > 0 {
+				compChars = int64(len([]rune(responseText(res.Body))))
+			}
+			res.Usage.CompletionTokens = (compChars + 3) / 4
+		}
 		if streamErr != nil {
 			p.recordFailure(context.Background(), issued, provider, req, streamErr, start)
 			return
@@ -465,6 +481,10 @@ func (p *Proxy) tryUpstream(ctx context.Context, provider *domain.Provider, issu
 		if p.guardEnabled() {
 			res.Stream = inspect.NewStreamGuard(res.Stream, p.guard, p.guardMode == "block", func(fs []inspect.Finding) { p.logFindings(true, fs) })
 		}
+		// Count assistant text for fallback token estimation when the upstream
+		// never reports real usage. Byte-transparent; outermost wrapper so it
+		// sees the final client-format bytes regardless of conversion/guard.
+		res.Stream = newRespCharCounter(res.Stream, ucap)
 		return res, nil
 	}
 
