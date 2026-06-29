@@ -448,9 +448,13 @@ func (p *Proxy) tryUpstream(ctx context.Context, provider *domain.Provider, issu
 			pr, pw := io.Pipe()
 			go func() {
 				u, _ := p.converter.ConvertStream(ctx, up.Stream, pw, outFormat, req.InFormat)
+				// Set usage BEFORE closing the pipe. pw.Close() unblocks the reader's
+				// final Read with EOF, which fires the transport's OnDone hook that
+				// reads ucap. Setting after Close races: OnDone reads zero. This is
+				// why cross-format streams (anthropic↔openai) logged 0/0/0 tokens.
+				ucap.set(u)
 				_ = up.Stream.Close()
 				_ = pw.Close()
-				ucap.set(u)
 			}()
 			res.Stream = pr
 		} else {
