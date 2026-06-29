@@ -34,6 +34,7 @@ type Proxy struct {
 	converter ports.Converter
 	limiter   ports.Limiter
 	selector  ports.KeySelector
+	modelPrefs ports.ModelPrefRepo
 	cache     ports.Cache
 	logs      ports.LogRepo
 	// logPayload enables full masked request/response capture (§4.7).
@@ -55,6 +56,7 @@ type ProxyDeps struct {
 	Converter ports.Converter
 	Limiter   ports.Limiter
 	Selector  ports.KeySelector
+	ModelPrefs ports.ModelPrefRepo
 	Cache     ports.Cache
 	Logs      ports.LogRepo
 	LogPayload bool
@@ -65,6 +67,7 @@ func NewProxy(d ProxyDeps) *Proxy {
 		issued: d.Issued, providers: d.Providers, upstreams: d.Upstreams,
 		secrets: d.Secrets, client: d.Client, converter: d.Converter,
 		limiter: d.Limiter, selector: d.Selector, cache: d.Cache, logs: d.Logs,
+		modelPrefs: d.ModelPrefs,
 		logPayload: d.LogPayload,
 	}
 }
@@ -237,6 +240,12 @@ func (p *Proxy) Handle(ctx context.Context, req ProxyRequest) (*ProxyResult, err
 	if err != nil {
 		return nil, err
 	}
+	// Apply the per-provider "model -> preferred key" mapping: bubble the
+	// preferred key to the front so it is tried first. If that key is down it
+	// simply won't be in 'ordered' (Select already dropped unusable keys), so
+	// routing transparently falls back to the others — preference controls
+	// priority, never exclusivity.
+	ordered = p.bubblePreferred(ctx, provider.ID, model, ordered)
 	if len(ordered) == 0 {
 		// No usable key for the requested model — try fallback models (§4.4),
 		// re-running selection per fallback so model-filter uses the fallback.
@@ -378,6 +387,42 @@ func (p *Proxy) onRequestDone(issued *domain.IssuedKey, provider *domain.Provide
 		_ = p.issued.MarkUsed(context.Background(), issued.ID, time.Now().UTC())
 		_ = p.selector.OnSuccess(context.Background(), key)
 	}
+}
+
+// bubblePreferred moves the model's preferred upstream key (if configured and
+// present in the usable set) to the front of the ordered slice. No-op when no
+// preference exists or the preferred key isn't usable for this request.
+func (p *Proxy) bubblePreferred(ctx context.Context, providerID domain.ID, model string, ordered []domain.UpstreamKey) []domain.UpstreamKey {
+	if p.modelPrefs == nil || len(ordered) < 2 || model == "" {
+		return ordered
+	}
+	prefs, err := p.modelPrefs.ListByProvider(ctx, providerID)
+	if err != nil {
+		return ordered
+	}
+	var want domain.ID
+	for _, pr := range prefs {
+		if pr.Model == model {
+			want = pr.UpstreamKeyID
+			break
+		}
+	}
+	if want == "" {
+		return ordered
+	}
+	for i := range ordered {
+		if ordered[i].ID == want {
+			if i == 0 {
+				return ordered
+			}
+			out := make([]domain.UpstreamKey, 0, len(ordered))
+			out = append(out, ordered[i])
+			out = append(out, ordered[:i]...)
+			out = append(out, ordered[i+1:]...)
+			return out
+		}
+	}
+	return ordered
 }
 
 func (p *Proxy) resolveKey(ctx context.Context, token string) (*domain.IssuedKey, error) {

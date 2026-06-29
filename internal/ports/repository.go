@@ -96,6 +96,18 @@ type CheckerRepo interface {
 }
 
 // PromptRuleRepo persists prompt-transformation rules (§4.7).
+// ModelPrefRepo persists per-provider "model -> preferred upstream key"
+// mappings. Rows are removed automatically (ON DELETE CASCADE) when either the
+// provider or the referenced upstream key is deleted.
+type ModelPrefRepo interface {
+	// ListByProvider returns all preferences for a provider.
+	ListByProvider(ctx context.Context, providerID domain.ID) ([]domain.ModelPreference, error)
+	// Set upserts the preferred key for (provider, model).
+	Set(ctx context.Context, pref domain.ModelPreference) error
+	// Delete removes the preference for (provider, model).
+	Delete(ctx context.Context, providerID domain.ID, model string) error
+}
+
 type PromptRuleRepo interface {
 	Create(ctx context.Context, r *domain.PromptRule) error
 	Update(ctx context.Context, r *domain.PromptRule) error

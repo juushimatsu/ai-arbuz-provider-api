@@ -83,6 +83,13 @@ export const api = {
   checkAllUpstream: (probes, providerId) =>
     request('POST', '/api/upstream/check-all', { probes, provider_id: providerId }),
   searchProviderModels: (id) => request('POST', '/api/providers/' + id + '/search-models'),
+  // model availability + "model -> preferred key" mapping
+  providerModels: (id) => request('GET', '/api/providers/' + id + '/models'),
+  listModelPrefs: (id) => request('GET', '/api/providers/' + id + '/model-prefs'),
+  setModelPref: (id, model, upstream_key_id) =>
+    request('PUT', '/api/providers/' + id + '/model-prefs', { model, upstream_key_id }),
+  deleteModelPref: (id, model) =>
+    request('DELETE', '/api/providers/' + id + '/model-prefs/' + encodeURIComponent(model)),
   getCheckerRun: (id) => request('GET', '/api/checker/runs/' + id),
 
   // mcp

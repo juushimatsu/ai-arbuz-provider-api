@@ -15,10 +15,12 @@ async function load() {
 }
 
 function newProvider() {
+  modelRouting.value = []; upstreamKeys.value = []
   editing.value = { name: '', strategy: 'failover', global_models: [], fallback_models: [], status: 'active', _modelsText: '', _fallbackText: '' }
 }
 function edit(p) {
   editing.value = { ...p, _modelsText: (p.global_models || []).join('\n'), _fallbackText: (p.fallback_models || []).join('\n') }
+  loadRouting(p.id)
 }
 
 async function save() {
@@ -59,6 +61,37 @@ async function autoSearchModels() {
     }
   } catch (err) { error.value = err.message }
   finally { searching.value = false }
+}
+
+// --- model routing: real availability + "model -> preferred key" mapping ---
+const modelRouting = ref([])
+const upstreamKeys = ref([])
+const routingLoading = ref(false)
+
+async function loadRouting(id) {
+  if (!id) { modelRouting.value = []; upstreamKeys.value = []; return }
+  routingLoading.value = true
+  try {
+    const [models, keys] = await Promise.all([api.providerModels(id), api.listUpstreams(id)])
+    modelRouting.value = models || []
+    upstreamKeys.value = keys || []
+  } catch (e) { error.value = e.message }
+  finally { routingLoading.value = false }
+}
+
+function keyLabel(id) {
+  const k = upstreamKeys.value.find(x => x.id === id)
+  if (!k) return id ? id.slice(0, 6) : ''
+  return (k.name && k.name.trim()) ? k.name : id.slice(0, 6)
+}
+
+async function choosePref(model, keyId) {
+  const e = editing.value
+  try {
+    if (keyId) await api.setModelPref(e.id, model, keyId)
+    else await api.deleteModelPref(e.id, model)
+    await loadRouting(e.id)
+  } catch (err) { error.value = err.message }
 }
 
 function splitLines(t) { return (t || '').split('\n').map(s => s.trim()).filter(Boolean) }
@@ -106,6 +139,25 @@ onMounted(load)
           <small v-if="!editing.id" class="dim">save provider &amp; add keys to enable auto-search</small>
         </div>
         <div class="field"><label>FALLBACK_MODELS (one per line)</label><textarea v-model="editing._fallbackText" rows="3"></textarea></div>
+        <div v-if="editing.id" class="field">
+          <label>MODEL ROUTING (model &rarr; preferred key)</label>
+          <small class="dim" v-if="routingLoading">loading…</small>
+          <small class="dim" v-else-if="!modelRouting.length">no models served by any live key</small>
+          <table v-else class="routing">
+            <thead><tr><th>model</th><th>preferred key</th></tr></thead>
+            <tbody>
+              <tr v-for="m in modelRouting" :key="m.model">
+                <td>{{ m.model }}<span v-if="!m.keys || !m.keys.length" class="warn"> (no live key)</span></td>
+                <td>
+                  <select :value="m.preferred_key_id || ''" @change="choosePref(m.model, $event.target.value)">
+                    <option value="">auto (priority)</option>
+                    <option v-for="kid in (m.keys || [])" :key="kid" :value="kid">{{ keyLabel(kid) }}</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <div class="field"><label>STATUS</label>
           <select v-model="editing.status"><option value="active">active</option><option value="disabled">disabled</option></select>
         </div>
@@ -123,4 +175,8 @@ onMounted(load)
 .modal { width: 480px; max-height: 80vh; overflow: auto; padding: var(--sp-5); background: var(--bg-panel); border: 1px solid var(--accent-2); border-radius: var(--r-md); box-shadow: var(--glow); }
 .modal h3 { margin: 0 0 var(--sp-4); color: var(--accent); }
 .actions { display: flex; gap: var(--sp-3); margin-top: var(--sp-4); }
+.routing { width: 100%; border-collapse: collapse; margin-top: var(--sp-2); font-size: 0.85em; }
+.routing th, .routing td { text-align: left; padding: var(--sp-1) var(--sp-2); border-bottom: 1px solid var(--border, #333); }
+.routing select { width: 100%; }
+.warn { color: var(--warn, #d99); }
 </style>

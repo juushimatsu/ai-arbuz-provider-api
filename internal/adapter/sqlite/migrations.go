@@ -128,6 +128,14 @@ CREATE TABLE IF NOT EXISTS prompt_rules (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS model_preferences (
+    provider_id     TEXT NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+    model           TEXT NOT NULL,
+    upstream_key_id TEXT NOT NULL REFERENCES upstream_keys(id) ON DELETE CASCADE,
+    PRIMARY KEY (provider_id, model)
+);
+CREATE INDEX IF NOT EXISTS idx_modelpref_provider ON model_preferences(provider_id);
+
 `
 
 func migrate(db *sql.DB) error {

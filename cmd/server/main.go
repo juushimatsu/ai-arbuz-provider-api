@@ -59,6 +59,7 @@ func main() {
 	mcpRepo := sqlite.NewMCPRepo(db)
 	checkerRepo := sqlite.NewCheckerRepo(db)
 	promptRuleRepo := sqlite.NewPromptRuleRepo(db)
+	modelPrefRepo := sqlite.NewModelPrefRepo(db)
 
 	// --- infrastructure adapters ---
 	secretStore, err := crypto.NewAESGCM(cfg.MasterKey)
@@ -91,6 +92,7 @@ func main() {
 		Limiter: limiter,
 		Selector: usecase.NewFailoverSelector(upstreamRepo),
 		Cache: memCache, Logs: logRepo, LogPayload: cfg.LogPayload,
+		ModelPrefs: modelPrefRepo,
 	})
 	// Load active prompt-transformation rules once at boot (§4.7).
 	if active, err := promptRules.Active(context.Background()); err == nil {
@@ -117,6 +119,7 @@ func main() {
 		MCP: mcpbridge.NewBridge(), MCPRepo: mcpRepo,
 		Checker: upstreamClient, CheckerRepo: checkerRepo,
 		ModelSearch: upstreamClient, PromptRules: promptRules,
+		ModelPrefs: modelPrefRepo,
 		Secrets: secretStore, Logger: logger,
 		StaticDir: "./web/dist", MaxBodyBytes: cfg.MaxBodyBytes,
 	})

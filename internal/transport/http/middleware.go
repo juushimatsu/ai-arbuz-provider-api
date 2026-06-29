@@ -32,6 +32,7 @@ type Server struct {
 	auth       *usecase.Auth
 	providers  *usecase.ProviderService
 	upstreams  *usecase.UpstreamService
+	modelPrefs ports.ModelPrefRepo
 	issued     *usecase.IssuedService
 	logs       *usecase.LogService
 	stats      ports.Stats
@@ -56,6 +57,7 @@ type Deps struct {
 	Auth        *usecase.Auth
 	Providers   *usecase.ProviderService
 	Upstreams   *usecase.UpstreamService
+	ModelPrefs  ports.ModelPrefRepo
 	Issued      *usecase.IssuedService
 	Logs        *usecase.LogService
 	Stats       ports.Stats
@@ -84,6 +86,7 @@ func NewServer(d Deps) *Server {
 		mcpWrapper: usecase.NewMCPWrapper(d.MCP, d.MCPRepo),
 		checker: d.Checker, checkerRepo: d.CheckerRepo, modelSearch: d.ModelSearch,
 		promptRules: d.PromptRules,
+		modelPrefs: d.ModelPrefs,
 		secrets: d.Secrets, log: d.Logger, assets: NewStaticAssets(d.StaticDir),
 		maxBody: maxBody, mux: http.NewServeMux(),
 	}
@@ -118,6 +121,13 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/upstreams/{id}", s.adminAuth(s.getUpstream))
 	s.mux.HandleFunc("PUT /api/upstreams/{id}", s.adminAuth(s.updateUpstream))
 	s.mux.HandleFunc("DELETE /api/upstreams/{id}", s.adminAuth(s.deleteUpstream))
+
+	// --- model -> preferred upstream key mapping (per provider) ---
+	s.mux.HandleFunc("GET /api/providers/{id}/model-prefs", s.adminAuth(s.listModelPrefs))
+	s.mux.HandleFunc("PUT /api/providers/{id}/model-prefs", s.adminAuth(s.setModelPref))
+	s.mux.HandleFunc("DELETE /api/providers/{id}/model-prefs/{model}", s.adminAuth(s.deleteModelPref))
+	// real model availability computed from live keys (not just GlobalModels)
+	s.mux.HandleFunc("GET /api/providers/{id}/models", s.adminAuth(s.providerModels))
 
 	s.mux.HandleFunc("GET /api/issued", s.adminAuth(s.listIssued))
 	s.mux.HandleFunc("POST /api/issued", s.adminAuth(s.createIssued))
